@@ -1,0 +1,29 @@
+/bin/
+/list-vpcs
+/huawei-elb-controller
+.env
+*.swp
+.DS_Store
+# IDE / tool config
+.arts/
+.codeartsdoer/
+.merkle-snapshot.json
+.omo/
+
+# Test artifacts (local only, not published)
+test-report-*.png
+测试报告.md
+
+# Dev guides (local only, not published)
+AGENTS.md
+DEVELOPMENT.md
+DEVELOPMENT-zh.md
+test-evidence
+
+# Documentation (published to repo)
+
+# Local test config (contains AK/SK, do not commit)
+my-values.yaml
+
+# Playwright MCP artifacts
+.playwright-mcp/

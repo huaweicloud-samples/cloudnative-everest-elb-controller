@@ -1,0 +1,47 @@
+name: IaC Validate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+      - 'charts/**'
+
+permissions:
+  contents: read
+
+jobs:
+  iac-validate:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C /tmp
+          sudo mv /tmp/kubeconform /usr/local/bin/
+          kubeconform -v
+
+      - name: Validate deploy/ manifests
+        run: |
+          kubeconform -summary -ignore-missing-schemas deploy/ \
+            || { echo "::error::Manifest validation failed"; exit 1; }
+          echo "deploy/ manifests: OK"
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Render and validate Helm chart
+        run: |
+          helm template charts/huawei-elb-controller > /tmp/rendered.yaml
+          kubeconform -summary -ignore-missing-schemas /tmp/rendered.yaml \
+            || echo "::warning::Rendered chart has schema findings (non-blocking)"
+          echo "Helm chart rendered: OK"
+
+      - name: Validate Helm values syntax
+        run: |
+          python3 -c "import yaml; yaml.safe_load(open('charts/huawei-elb-controller/values.yaml'))" \
+            && echo "values.yaml: syntax OK"
