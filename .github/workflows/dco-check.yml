@@ -1,0 +1,40 @@
+name: DCO Check
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dco:
+    name: DCO Sign-Off Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: DCO Check
+        run: |
+          set -e
+          BASE="origin/${{ github.base_ref }}"
+          echo "Checking DCO sign-off on commits in $BASE..HEAD"
+          missing=0
+          # --no-merges: skip GitHub's auto-generated PR test merge commit (it has no sign-off)
+          for commit in $(git rev-list --no-merges "$BASE"..HEAD); do
+            if ! git show -s --format='%B' "$commit" | grep -q '^Signed-off-by:'; then
+              echo "::error::Missing Signed-off-by in commit: $(git show -s --format='%h %s' "$commit")"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo ""
+            echo "Some commits are missing DCO sign-off."
+            echo "Fix with: git commit --amend -s  (or git rebase --signoff)"
+            exit 1
+          fi
+          echo "All commits have DCO sign-off."
